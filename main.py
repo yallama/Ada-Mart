@@ -338,7 +338,7 @@ def main():
         st.markdown("---")
         st.header("📄 Download My CV")
         # Add CV download button
-        cv_path = "Ada-Mart/Ada_Ann_Liao_CV.pdf" # Assuming cv.pdf is in the Ada-Mart folder
+        cv_path = "Ada_Ann_Liao_CV.pdf" # Assuming cv.pdf is in the Ada-Mart folder
         if os.path.exists(cv_path):
             with open(cv_path, "rb") as f:
                 st.download_button(
