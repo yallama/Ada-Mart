@@ -291,7 +291,7 @@ def main():
             if st.button("Create Sample Documentation"):
                 create_sample_documentation()
                 st.success("Created sample documentation! Please refresh the page to load it.")
-                st.experimental_rerun()
+                st.rerun()
 
     # Initialize components
     searcher = init_searcher()
@@ -332,19 +332,19 @@ def main():
                     # Trigger chat processing
                     st.session_state.process_chat = True
                     st.session_state.current_prompt = question
-                    st.experimental_rerun()
+                    st.rerun()
 
 
         st.markdown("---")
         st.header("📄 Download My CV")
         # Add CV download button
-        cv_path = "Ada-Mart/cv.pdf" # Assuming cv.pdf is in the Ada-Mart folder
+        cv_path = "Ada-Mart/Ada_Ann_Liao_CV.pdf" # Assuming cv.pdf is in the Ada-Mart folder
         if os.path.exists(cv_path):
             with open(cv_path, "rb") as f:
                 st.download_button(
                     label="Download CV (PDF)",
                     data=f,
-                    file_name="my_cv.pdf",
+                    file_name="Ada_Ann_Liao_CV.pdf",
                     mime="application/pdf"
                 )
         else:
@@ -355,7 +355,7 @@ def main():
         st.header("🔄 Actions")
         if st.button("🔄 Rebuild Search Index"):
             st.cache_resource.clear()
-            st.experimental_rerun()
+            st.rerun()
 
     # Initialize chat history
     if "messages" not in st.session_state:
