@@ -9,8 +9,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # Page config
 st.set_page_config(
-    page_title="Ada Documentation Assistant", 
-    page_icon="📚", 
+    page_title="Lovelace - Your Ada.cx Documentation Assistant",
+    page_icon="🤖", # Changed icon to a robot
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -27,14 +27,14 @@ class DocumentationSearcher:
         # Check if sites folder exists
         if not os.path.exists(self.docs_folder):
             st.error(f"📁 Documentation folder '{self.docs_folder}' not found!")
-            st.info("Please create a 'sites' folder in your repository and add your scraped Ada documentation markdown files.")
+            st.info("Lovelace needs documentation to help you! Please create a 'sites' folder in your repository and add your scraped Ada documentation markdown files.")
             return 0
 
         markdown_files = glob.glob(os.path.join(self.docs_folder, "*.md"))
 
         if not markdown_files:
             st.warning(f"📁 No markdown files found in '{self.docs_folder}' folder!")
-            st.info("Please add your scraped Ada documentation as .md files in the sites folder.")
+            st.info("Lovelace is ready to help, but needs documentation! Please add your scraped Ada documentation as .md files in the sites folder.")
             return 0
 
         self.documents = []  # Reset documents
@@ -193,9 +193,11 @@ def init_claude():
         api_key = os.environ['ANTHROPIC_API_KEY']
 
     if not api_key:
-        st.error("🔑 Please set your ANTHROPIC_API_KEY in Streamlit secrets")
+        st.error("🔑 Anthropic API Key not found!")
         st.info("""
-        To add your API key:
+        Lovelace needs an Anthropic API key to function. Please set your `ANTHROPIC_API_KEY` in Streamlit secrets or as an environment variable.
+
+        **To add your API key in Streamlit Cloud:**
         1. Go to your Streamlit Cloud dashboard
         2. Click on your app
         3. Go to Settings > Secrets
@@ -258,26 +260,25 @@ Authorization: Bearer YOUR_API_KEY
         f.write(sample_content)
 
 def main():
-    st.title("📚 Ada Documentation Assistant")
-    st.markdown("Ask questions about Ada's documentation and I'll find the most relevant articles for you!")
+    st.title("🤖 Lovelace - Your Ada.cx Documentation Assistant")
+    st.markdown("Hello! I'm Lovelace, your friendly assistant for Ada.cx documentation. Ask me anything about Ada.cx APIs, integrations, authentication, and more, and I'll find the most relevant articles for you!")
 
     # Check if we need to create sample docs
     if not os.path.exists("sites") or not glob.glob("sites/*.md"):
-        with st.expander("📋 Setup Instructions", expanded=True):
+        with st.expander("📋 Setup Instructions (for Developers)", expanded=False): # Collapse by default
             st.markdown("""
-            **To use this chatbot:**
+            **To make Lovelace helpful, you need to provide documentation and an API key.**
 
             1. **Add your documentation files:**
-               - Create a `sites/` folder in your repository
-               - Add your scraped Ada documentation as `.md` files
-               - Each file should have frontmatter with `url` and `title`
+               - Create a `sites/` folder in your repository.
+               - Add your scraped Ada documentation as `.md` files within this folder.
+               - Each file should ideally have frontmatter with `url` and `title` for best results.
 
             2. **Add your Anthropic API key:**
-               - Go to Streamlit Cloud dashboard
-               - Navigate to your app settings
-               - Add `ANTHROPIC_API_KEY` to secrets
+               - Lovelace uses the Anthropic API to generate responses.
+               - Set your `ANTHROPIC_API_KEY` in Streamlit secrets or as an environment variable.
 
-            3. **Example markdown format:**
+            **Example markdown format:**
             ```markdown
             ---
             url: "https://docs.ada.cx/..."
@@ -290,7 +291,7 @@ def main():
 
             if st.button("Create Sample Documentation"):
                 create_sample_documentation()
-                st.success("Created sample documentation! Refresh the page.")
+                st.success("Created sample documentation! Please refresh the page to load it.")
                 st.experimental_rerun()
 
     # Initialize components
@@ -323,13 +324,39 @@ def main():
             st.experimental_rerun()
 
         st.markdown("---")
+        st.header("📄 Download My CV")
+        # Add CV download button
+        cv_path = "Ada-Mart/cv.pdf" # Assuming cv.pdf is in the Ada-Mart folder
+        if os.path.exists(cv_path):
+            with open(cv_path, "rb") as f:
+                st.download_button(
+                    label="Download CV (PDF)",
+                    data=f,
+                    file_name="my_cv.pdf",
+                    mime="application/pdf"
+                )
+        else:
+            st.warning(f"CV file not found at {cv_path}")
+
+
+        st.markdown("---")
         st.header("💡 Sample Questions")
         st.markdown("""
-        - How do I authenticate with Ada's API?
-        - How to create a new chatbot?
-        - What are the rate limits?
-        - How to integrate webhooks?
-        - How to manage conversation flow?
+        Click on a question to try it out!
+
+        **Getting Started:**
+        - [How do I authenticate with Ada's API?](#how-do-i-authenticate-with-adas-api)
+        - [How to create a new chatbot?](#how-to-create-a-new-chatbot)
+
+        **Conversations:**
+        - [How to create and manage conversations?](#how-to-create-and-manage-conversations)
+        - [How to integrate webhooks?](#how-to-integrate-webhooks)
+
+        **Knowledge Base:**
+        - [How do I manage articles and sources?](#how-do-i-manage-articles-and-sources)
+
+        **Other:**
+        - [What are the rate limits?](#what-are-the-rate-limits)
         """)
 
     # Initialize chat history
@@ -340,6 +367,14 @@ def main():
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+
+    # Add Lovelace's initial welcome message if no messages yet
+    if not st.session_state.messages:
+        lovelace_welcome = "Hello! I'm Lovelace, your friendly assistant for Ada.cx documentation. Ask me anything about Ada.cx APIs, integrations, authentication, and more, and I'll find the most relevant articles for you!"
+        with st.chat_message("assistant"):
+            st.markdown(lovelace_welcome)
+        st.session_state.messages.append({"role": "assistant", "content": lovelace_welcome})
+
 
     # Chat input
     if prompt := st.chat_input("Ask about Ada's documentation..."):
@@ -367,11 +402,12 @@ def main():
                 # Prepare context for Claude
                 context = format_search_results(search_results)
 
-                system_prompt = """You are a helpful assistant for Ada.cx documentation. 
-                Based on the provided documentation sections, answer the user's question clearly and concisely.
-                Always include relevant URLs when available.
-                If the documentation doesn't contain enough information, say so and suggest where they might find more help.
-                Format your response in a friendly, helpful manner."""
+                system_prompt = """You are Lovelace, a helpful, supportive, and factual assistant for Ada.cx documentation.
+                Your sole purpose is to answer questions based *only* on the provided documentation sections.
+                If a question cannot be answered from the provided documentation, politely state that you can only answer questions based on the Ada.cx documentation you have access to.
+                Answer the user's question clearly and concisely, maintaining a supportive and factual tone.
+                Always include relevant URLs from the documentation when available.
+                """
 
                 user_prompt = f"""User question: {prompt}
 
@@ -399,10 +435,11 @@ def main():
                     st.session_state.messages.append({"role": "assistant", "content": response_text})
 
                 except Exception as e:
-                    st.error(f"❌ Error getting response: {e}")
+                    st.error(f"❌ Lovelace encountered an error while generating a response: {e}")
+                    st.info("Please try again or check your API key and documentation setup.")
 
             else:
-                no_results_msg = "I couldn't find any relevant documentation for your question. Please try rephrasing your question or check if the documentation has been loaded properly."
+                no_results_msg = "I couldn't find any relevant documentation for your question in the loaded documents. Please try rephrasing your question or check if the correct documentation has been loaded."
                 st.markdown(no_results_msg)
                 st.session_state.messages.append({"role": "assistant", "content": no_results_msg})
 
