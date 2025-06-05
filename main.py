@@ -170,16 +170,16 @@ def init_searcher():
     # Load documents
     num_docs = searcher.load_documents()
 
-    if num_docs > 0:
-        # Build search index
-        if searcher.build_search_index():
-            st.success(f"✅ Successfully loaded and indexed {num_docs} documentation pages!")
-            return searcher
-        else:
-            st.error("❌ Failed to build search index")
-            return None
-    else:
-        return None
+    #if num_docs > 0:
+    #    # Build search index
+    #    if searcher.build_search_index():
+    #        st.success(f"✅ Successfully loaded and indexed {num_docs} documentation pages!")
+    #        return searcher
+    #    else:
+    #        st.error("❌ Failed to build search index")
+    #        return None
+    #else:
+    #    return None
 
 @st.cache_resource
 def init_claude():
