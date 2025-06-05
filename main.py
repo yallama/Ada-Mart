@@ -162,6 +162,7 @@ class DocumentationSearcher:
             st.error(f"Search error: {e}")
             return []
 
+test = '''
 @st.cache_resource
 def init_searcher():
     """Initialize the documentation searcher"""
@@ -180,6 +181,7 @@ def init_searcher():
             return None
     else:
         return None
+'''
 
 @st.cache_resource
 def init_claude():
@@ -261,7 +263,6 @@ Authorization: Bearer YOUR_API_KEY
 
 def main():
     st.title("🤖 Lovelace - Your Ada.cx Documentation Assistant")
-    st.markdown("Hello! I'm Lovelace, your friendly assistant for Ada.cx documentation. Ask me anything about Ada.cx APIs, integrations, authentication, and more, and I'll find the most relevant articles for you!")
 
     # Check if we need to create sample docs
     if not os.path.exists("sites") or not glob.glob("sites/*.md"):
@@ -304,24 +305,37 @@ def main():
 
     # Sidebar with information
     with st.sidebar:
-        st.header("📊 Documentation Stats")
-        st.metric("Documents Loaded", len(searcher.documents))
-
-        # Show loaded documents
-        if st.checkbox("Show Loaded Documents"):
-            for i, doc in enumerate(searcher.documents):
-                with st.expander(f"📄 {doc.get('title', f'Document {i+1}')}"):
-                    if doc.get('url'):
-                        st.write(f"**URL:** {doc['url']}")
-                    st.write(f"**File:** {doc.get('filename', 'Unknown')}")
-                    content_preview = doc.get('content', '')[:200]
-                    st.write(f"**Preview:** {content_preview}...")
 
         st.markdown("---")
-        st.header("🔄 Actions")
-        if st.button("🔄 Rebuild Search Index"):
-            st.cache_resource.clear()
-            st.experimental_rerun()
+        st.header("💡 Sample Questions")
+
+        sample_questions = {
+            "Getting Started": [
+                "How do I authenticate with Ada's API?",
+                "How to create a new chatbot?"
+            ],
+            "Conversations": [
+                "How to create and manage conversations?",
+                "How to integrate webhooks?"
+            ],
+            "Knowledge Base": [
+                "How do I manage articles and sources?"
+            ],
+            "Other": [
+                "What are the rate limits?"
+            ]
+        }
+
+        for category, questions in sample_questions.items():
+            st.markdown(f"**{category}:**")
+            for question in questions:
+                if st.button(question, key=f"sample_q_{question}"):
+                    st.session_state.messages.append({"role": "user", "content": question})
+                    # Trigger chat processing
+                    st.session_state.process_chat = True
+                    st.session_state.current_prompt = question
+                    st.experimental_rerun()
+
 
         st.markdown("---")
         st.header("📄 Download My CV")
@@ -338,26 +352,12 @@ def main():
         else:
             st.warning(f"CV file not found at {cv_path}")
 
-
+        
         st.markdown("---")
-        st.header("💡 Sample Questions")
-        st.markdown("""
-        Click on a question to try it out!
-
-        **Getting Started:**
-        - [How do I authenticate with Ada's API?](#how-do-i-authenticate-with-adas-api)
-        - [How to create a new chatbot?](#how-to-create-a-new-chatbot)
-
-        **Conversations:**
-        - [How to create and manage conversations?](#how-to-create-and-manage-conversations)
-        - [How to integrate webhooks?](#how-to-integrate-webhooks)
-
-        **Knowledge Base:**
-        - [How do I manage articles and sources?](#how-do-i-manage-articles-and-sources)
-
-        **Other:**
-        - [What are the rate limits?](#what-are-the-rate-limits)
-        """)
+        st.header("🔄 Actions")
+        if st.button("🔄 Rebuild Search Index"):
+            st.cache_resource.clear()
+            st.experimental_rerun()
 
     # Initialize chat history
     if "messages" not in st.session_state:
@@ -370,14 +370,22 @@ def main():
 
     # Add Lovelace's initial welcome message if no messages yet
     if not st.session_state.messages:
-        lovelace_welcome = "Hello! I'm Lovelace, your friendly assistant for Ada.cx documentation. Ask me anything about Ada.cx APIs, integrations, authentication, and more, and I'll find the most relevant articles for you!"
+        lovelace_welcome = "Hello! I'm Lovelace, your friendly assistant for Ada.cx API documentation. Ask me anything about Ada's APIs, integrations, authentication, and more, and I'll find the most relevant articles for you!"
         with st.chat_message("assistant"):
             st.markdown(lovelace_welcome)
         st.session_state.messages.append({"role": "assistant", "content": lovelace_welcome})
 
 
     # Chat input
-    if prompt := st.chat_input("Ask about Ada's documentation..."):
+    prompt = st.chat_input("Ask about Ada's documentation...")
+
+    # Handle sample question button click
+    if st.session_state.get('process_chat', False):
+        prompt = st.session_state.current_prompt
+        st.session_state.process_chat = False # Reset flag
+        st.session_state.current_prompt = None # Clear prompt
+
+    if prompt:
         # Add user message
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
